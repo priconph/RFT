@@ -1,0 +1,85 @@
+# Office documents / spreadsheets
+*.xls
+*.xlsx
+*.xlsm
+*.xlsb
+*.csv
+*.doc
+*.docx
+*.ppt
+*.pptx
+*.odt
+*.ods
+*.odp
+~$*
+
+# PDF
+*.pdf
+
+# Archives / packages
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+*.tgz
+*.bz2
+
+# Database dumps / backups
+*.sql
+*.bak
+*.backup
+*.dump
+*.mdb
+*.accdb
+*.sqlite
+*.sqlite3
+*.db
+
+# Video / audio
+*.mp4
+*.avi
+*.mov
+*.wmv
+*.mkv
+*.flv
+*.mp3
+*.wav
+
+# Disk images / installers / binaries
+*.iso
+*.exe
+*.msi
+*.dll
+*.dmp
+
+# Logs / temp / cache
+*.log
+*.tmp
+*.temp
+*.swp
+*.cache
+logs/
+tmp/
+temp/
+cache/
+
+# Uploads / generated reports
+uploads/
+upload/
+exports/
+reports/
+
+# Dependencies
+node_modules/
+vendor/
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Environment / secrets
+.env

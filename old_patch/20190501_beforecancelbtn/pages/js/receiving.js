@@ -1,0 +1,422 @@
+
+	var handler = '../handler/handler.php';
+	var selected_pkid ='';
+	var email = $('#id_email').val();
+	
+	$(document).ready(function(){
+		
+		$('#btn_id_receive').click(function(){
+			
+			if (confirm('Please select ok to confirm approval')) {
+				
+				var data = {
+					'action'	: 'process_controlno',
+					'pkid'		: selected_pkid
+				}
+				
+				data = $.param(data);
+
+				$.ajax({
+					type	: 'post',
+					dataType: 'json',
+					data	: data,
+					url		: handler,
+					success	: function(data){
+						var ctrl_no = data['ctrlno'];
+						var counter = data['counter'];
+						// alert(ctrl_no);
+						generate_code(ctrl_no,counter);
+					},
+					error	: function(data){
+						alert('Error found on code generation.');
+						console.log(data);
+					}
+				});
+				
+			} else {
+				return false;
+			}
+			
+		});
+		
+	});
+	
+	display_receiving();
+	
+	function display_receiving(){
+		
+		var data = {
+			'action'	: 'display_receiving'
+		}
+		
+		data = $.param(data);
+		
+		$.ajax({
+			type	: 'post',
+			dataType: 'json',
+			data	: data,
+			url		: handler,
+			success	: function(data){
+				
+				// alert(data['ctr']);
+				var ctr = data['ctr'];
+			
+				$('#container_receive').empty();
+			
+				var html  = '<table id="tbl_receive" class="table table-bordered" style="padding: 20px; margin-right: 20px; font-size: 15px;">';
+					html += '	<thead>';
+					html += '		<tr>';
+					html += '			<th>Control No.</th>';
+					html += '			<th>Date Filed</th>';
+					html += '			<th>Conformance</th>';
+					html += '			<th>Receiving</th>';	
+					html += '			<th>QC Head Approval</th>';
+					html += '		</tr>';
+					html += '	</thead>';
+					html += '	<tbody>';
+					html += '	</tbody>';
+					html += '</table>';
+					
+				$('#container_receive').append(html);	
+			
+				for(i=0;i<ctr;i++){
+						var html = '<tr id="'+data['pkid_request'][i]+'">';
+						
+						if(data['control_no'][i]==''){										
+							html += '   <td style="vertical-align: middle;"><h5><span class="label label-info" style="background-color: green; border-radius: 0px;">TBA</span></h5></td>';
+						}else{
+							html += '   <td style="vertical-align: middle;">'+data['control_no'][i]+'</td>';
+						}
+						
+						html += '	<td style="vertical-align: middle;">'+data['date_filed'][i]+'</td>';
+						
+						if(data['conf_status'][i] == '0'){
+							html += '   <td style="vertical-align: middle;"><h5><span class="label label-info" style="background-color: #34CCFF; border-radius: 0px;">ON-GOING</span></h5></td>';
+						}else if(data['conf_status'][i] == '1'){
+							html += '   <td style="vertical-align: middle;"><h5><span class="label label-success">CONFORMED</span></h5></td>';
+						}else{
+							html += '   <td style="vertical-align: middle;"><h5><span class="label label-success" style="background-color: #5416B4; border-radius: 0px;">QUEUED</span></h5></td>';
+						}
+						
+						if(data['rec_status'][i] == '0'){
+							html += '   <td style="vertical-align: middle;"><h5><span class="label label-info" style="background-color: #FF9F00; border-radius: 0px;">FOR CONFORMANCE</span></h5></td>';
+						}else if(data['rec_status'][i] == '1'){
+							html += '   <td style="vertical-align: middle;"><h5><span class="label label-success">RECEIVED</span></h5></td>';
+						}else{
+							html += '   <td style="vertical-align: middle;"><h5><span class="label label-success" style="background-color: #5416B4; border-radius: 0px;">QUEUED</span></h5></td>';
+						}
+						
+						if(data['app_status'][i] == '0'){
+							html += '   <td style="vertical-align: middle;"><h5><span class="label label-info" style="background-color: #34CCFF; border-radius: 0px;">ON-GOING</span></h5></td>';
+						}else if(data['app_status'][i] == '1'){
+							html += '   <td style="vertical-align: middle;"><h5><span class="label label-success">APPROVED</span></h5></td>';
+						}else{
+							html += '   <td style="vertical-align: middle;"><h5><span class="label label-success" style="background-color: #5416B4; border-radius: 0px;">QUEUED</span></h5></td>';
+						}
+												
+						html += '</tr>';
+						
+						$('#tbl_receive tbody').append(html);
+				}
+			
+				var oTable = $('#tbl_receive').DataTable({ paginate: true, aaSorting: []});
+				table_event_receive();
+				
+			},
+			error	: function(data){
+				alert('Error loading conformance table.');
+				console.log(data);
+			}
+		});
+		
+	}
+	
+	function table_event_receive(){
+		
+		$('#tbl_receive tbody').on('click','tr', function(){
+			selected_pkid = '';
+			$('#tbl_receive tbody tr').attr('style','');
+			$(this).attr('style','background:#7a9d00 ;color:white;');
+			selected_pkid = this.id;
+		});
+		
+		$('#tbl_receive tbody').on('dblclick', 'tr', function(){
+			
+			getRequestDetails(selected_pkid);
+			$('#btn_id_receive').prop('disabled',false);
+		});
+		
+	}
+	
+	function getRequestDetails(selected_pkid){
+		
+		var data = {
+			'action'	: 'getRequestDetails',
+			'pkid'		: selected_pkid
+		}
+		
+		data = $.param(data);
+		
+		$.ajax({
+			type	: 'post',
+			dataType: 'json',
+			data	: data,
+			url		: handler,
+			success	: function(data){
+				
+				var pkid = data['pkid_request'];
+				
+				$('#id_receive_dept').val(data['dept']);
+				$('#id_receive_sec').val(data['sec']);
+				
+				
+				var reason = data['rft'];
+				var job_function = data['job_func'];
+				var allocation = data['al_alloc'];
+				var requestor = data['requested_by'];
+				var conformer = data['conformed_by'];
+				
+				if(reason == '1'){
+					$('#id_receive_reason').val('Newly Hired');
+				}else if(reason == '2'){
+					$('#id_receive_reason').val('Promoted Employee');
+				}else if(reason == '3'){
+					$('#id_receive_reason').val('Transferred from other assembly line');
+				}else if(reason == '4'){
+					$('#id_receive_reason').val('Transferred from on other section/department/division');
+				}else if(reason == '5'){
+					$('#id_receive_reason').val('ML / SL / VL (whose leave reached at least 1 month)');
+				}else if(reason == '6'){
+					$('#id_receive_reason').val('New Product Line');
+				}else if(reason == '7'){
+					$('#id_receive_reason').val('Flexibility Certification');
+				}else if(reason == '8'){
+					$('#id_receive_reason').val('Re-certification');
+				}
+				
+				if(job_function == '1'){
+					$('#id_receive_jobfunc').val('Operator');
+				}else if(job_function == '2'){
+					$('#id_receive_jobfunc').val('Material Handler');
+				}else if(job_function == '3'){
+					$('#id_receive_jobfunc').val('Inspector');
+				}else if(job_function == '4'){
+					$('#id_receive_jobfunc').val('`Technician');
+				}else if(job_function == '5'){
+					$('#id_receive_jobfunc').val('Engineer');
+				}else if(job_function == '6'){
+					$('#id_receive_jobfunc').val('Supervisor');
+				}
+				
+				if(allocation == '1'){
+					$('#id_receive_alloc').val('Automotive Line');
+				}else{
+					$('#id_receive_alloc').val('Non-Automotive Line');
+				}
+				
+				if(data['rec_status'] == '1'){
+					$('#btn_id_receive').prop('disabled',true);
+				}
+				
+				getEmployeeList(pkid);
+				getRequestorDetails(requestor);
+				getConformerDetails(conformer);
+				
+				$('#modal_id_receive').modal('show');
+			},
+			error	: function(data){
+				alert('Error on retrieving request details.');
+				console.log(data);
+			}
+		});
+		
+	}
+	
+	function getEmployeeList(pkid){
+		
+		var data = {
+			'action'	: 'getEmployeeList',
+			'pkid'		: pkid[0]
+		}
+		
+		data = $.param(data);
+		
+		$.ajax({
+			type	: 'post',
+			dataType: 'json',
+			data	: data,
+			url		: handler,
+			success	: function(data){
+				
+				var ctr = data['ctr'];
+			
+				$('#container_emplist').empty();
+				
+				var html  = '<table id="tbl_emplist" class="table table-bordered" style="padding: 20px; margin-right: 20px; font-size: 12px;">';
+					html += '	<thead>';
+					html += '		<tr>';
+					html += '			<th>Date Hired</th>';
+					html += '			<th>Employee No.</th>';
+					html += '			<th>Name</th>';
+					html += '			<th colspan="2">From (Station/Product Name)</th>';	
+					html += '			<th colspan="2">To (Station/Product Name)</th>';
+					html += '		</tr>';
+					html += '	</thead>';
+					html += '	<tbody>';
+					html += '	</tbody>';
+					html += '</table>';
+					
+				$('#container_emplist').append(html);	
+				
+				for(i=0;i<ctr;i++){
+						var html = '<tr id="'+data['pkid_trainees'][i]+'">';
+						html += '   <td>'+data['date_hired'][i]+'</td>';
+						html += '	<td>'+data['emp_no'][i]+'</td>';
+						html += '	<td>'+data['emp_name'][i]+'</td>';	
+						html += '	<td>'+data['from_station'][i]+'</td>';	
+						html += '	<td>'+data['from_line'][i]+'</td>';
+						html += '	<td>'+data['to_station'][i]+'</td>';
+						html += '	<td>'+data['to_line'][i]+'</td>';
+						html += '</tr>';
+					 $('#tbl_emplist tbody').append(html);
+				}
+				
+				var oTable = $('#tbl_emplist').DataTable({ paginate: true, aaSorting: [] });
+			},
+			error	: function(data){
+				alert('Error on retrieving employee list');
+				console.log(data);
+			}
+		});
+	}
+	
+	function getRequestorDetails(requestor){
+		
+		var data = {
+			'action'	: 'getRequestorDetails',
+			'email'		: requestor[0]
+		}
+		
+		data = $.param(data);
+		
+		$.ajax({
+			type	: 'post',
+			dataType: 'json',
+			data	: data,
+			url		: handler,
+			success	: function(data){
+				var ln = data['lastname'];
+				var fn = data['firstname'];
+				
+				var fullname = fn+" "+ln;
+				
+				$('#id_receive_requestor').val(fullname);
+			},
+			error	: function(data){
+				alert('Error found in retrieving requestor');
+				console.log(data);
+			}
+		});
+		
+	}
+	
+	function getConformerDetails(conformer){
+		
+		var data = {
+			'action'	: 'getRequestorDetails',
+			'email'		: conformer[0]
+		}
+		
+		data = $.param(data);
+		
+		$.ajax({
+			type	: 'post',
+			dataType: 'json',
+			data	: data,
+			url		: handler,
+			success	: function(data){
+				var ln = data['lastname'];
+				var fn = data['firstname'];
+				
+				var fullname = fn+" "+ln;
+				
+				$('#id_receive_conformer').val(fullname);
+			},
+			error	: function(data){
+				alert('Error found in retrieving requestor');
+				console.log(data);
+			}
+		});
+	}
+	
+	function generate_code(ctrl_no,counter){
+		var data = {
+					'action'		: 'receive_request',
+					'pkid'			: selected_pkid,
+					'receiver'		: email,
+					'ctrl_no'		: ctrl_no,
+					'counter'		: counter
+				}
+		
+				data = $.param(data);
+				// alert(data);
+				receive_request(data);
+	}
+	
+	function receive_request(data){
+		
+		$.ajax({
+			type	: 'post',
+			dataType: 'json',
+			data	: data,
+			url		: handler,
+			success : function(data){
+				var pkid_receiving = data['pkid'];
+				send_email_receive(pkid_receiving);
+				
+			},
+			error	: function(data){
+				alert('Error found on conforming request.');
+				console.log(data);
+			}
+		});
+		
+	}
+	
+	function send_email_receive(pkid_receiving){
+		var data = {
+			'action'	: 'send_email_receive',
+			'pkid'		: pkid_receiving,
+			'email'		: email
+		}
+		
+		data = $.param(data);
+		
+		// alert(data);
+		
+		$.ajax({
+			type	: 'post',
+			dataType: 'json',
+			data	: data,
+			url		: handler,
+			success	: function(data){
+				$('#modal_id_receive').modal('hide');
+				notif_success();
+				display_receiving();
+			},
+			error	: function(data){
+				alert('Error found in sending email receive');
+				console.log(data);
+			}
+		});
+	}
+	
+	function notif_success(){
+		notif({
+		msg: "<strong>System: </strong> Transaction successful!",
+		type: "success",
+		position: "center",
+		timeout: "3000"
+		});
+	}
+	
